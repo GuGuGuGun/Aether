@@ -1156,14 +1156,32 @@ async def complete_provider_oauth(
 # ==============================================================================
 
 
+def _extract_refresh_token(payload: dict[str, Any]) -> str | None:
+    """从导入对象中提取 refresh token（兼容扁平/嵌套格式）。"""
+    direct = payload.get("refresh_token") or payload.get("refreshToken")
+    if isinstance(direct, str) and direct.strip():
+        return direct.strip()
+
+    nested = payload.get("auth_config") or payload.get("authConfig")
+    if isinstance(nested, dict):
+        nested_token = nested.get("refresh_token") or nested.get("refreshToken")
+        if isinstance(nested_token, str) and nested_token.strip():
+            return nested_token.strip()
+
+    return None
+
+
 def _parse_tokens_input(raw_input: str) -> list[str]:
     """
     解析通用 Token 导入输入，支持多种格式。
 
     支持的格式：
     1. 单个 Token 字符串
-    2. JSON 数组: ["token1", "token2", ...]
-    3. 纯 Token 导入（一行一个）: "token1\\ntoken2\\ntoken3"
+    2. JSON 数组（字符串）: ["token1", "token2", ...]
+    3. JSON 数组（对象）: [{"refresh_token": "..."}, {"auth_config": {...}}]
+    4. JSON 对象: {"refresh_token": "..."} / {"auth_config": {...}}
+    5. 纯 Token 导入（一行一个）: "token1\\ntoken2\\ntoken3"
+    6. JSON Lines（对象）: 一行一个 JSON 对象
 
     返回: Token 字符串列表
     """
@@ -1173,24 +1191,44 @@ def _parse_tokens_input(raw_input: str) -> list[str]:
 
     result: list[str] = []
 
-    # 尝试解析为 JSON 数组
-    if raw.startswith("["):
+    # 尝试解析为 JSON（数组或对象）
+    if raw.startswith("[") or raw.startswith("{"):
         try:
             parsed = json.loads(raw)
             if isinstance(parsed, list):
                 for item in parsed:
                     if isinstance(item, str) and item.strip():
                         result.append(item.strip())
+                    elif isinstance(item, dict):
+                        token = _extract_refresh_token(item)
+                        if token:
+                            result.append(token)
                 return result
+            if isinstance(parsed, dict):
+                token = _extract_refresh_token(parsed)
+                if token:
+                    return [token]
+                return []
         except json.JSONDecodeError:
             pass  # 不是有效 JSON，继续尝试其他格式
 
-    # 纯 Token 导入（一行一个）
+    # 纯 Token 导入（一行一个），兼容 JSON Lines 对象
     lines = raw.splitlines()
     for line in lines:
-        token = line.strip()
-        if token and not token.startswith("#"):  # 忽略空行和注释行
-            result.append(token)
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):  # 忽略空行和注释行
+            continue
+        if stripped.startswith("{") and stripped.endswith("}"):
+            try:
+                maybe_obj = json.loads(stripped)
+                if isinstance(maybe_obj, dict):
+                    token = _extract_refresh_token(maybe_obj)
+                    if token:
+                        result.append(token)
+                        continue
+            except json.JSONDecodeError:
+                pass
+        result.append(stripped)
 
     return result
 

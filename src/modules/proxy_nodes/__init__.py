@@ -76,6 +76,7 @@ async def _on_startup() -> None:
     """启动心跳检测调度器"""
     import logging
 
+    from src.services.proxy_node.auto_fetch_scheduler import get_proxy_node_auto_fetch_scheduler
     from src.services.proxy_node.health_scheduler import get_proxy_node_health_scheduler
     from src.utils.task_coordinator import StartupTaskCoordinator
 
@@ -99,11 +100,22 @@ async def _on_startup() -> None:
     else:
         logger.info("检测到其他 worker 已运行 ProxyNode 心跳检测，本实例跳过")
 
+    proxy_node_auto_fetch_scheduler = get_proxy_node_auto_fetch_scheduler()
+    auto_fetch_active = await task_coordinator.acquire("proxy_node_auto_fetch")
+    if auto_fetch_active:
+        logger.info("启动 ProxyNode 自动抓取代理任务...")
+        await proxy_node_auto_fetch_scheduler.start()
+        if not proxy_node_auto_fetch_scheduler.running:
+            await task_coordinator.release("proxy_node_auto_fetch")
+    else:
+        logger.info("检测到其他 worker 已运行 ProxyNode 自动抓取任务，本实例跳过")
+
 
 async def _on_shutdown() -> None:
     """停止心跳检测调度器"""
     import logging
 
+    from src.services.proxy_node.auto_fetch_scheduler import get_proxy_node_auto_fetch_scheduler
     from src.services.proxy_node.health_scheduler import get_proxy_node_health_scheduler
     from src.utils.task_coordinator import StartupTaskCoordinator
 
@@ -119,6 +131,12 @@ async def _on_shutdown() -> None:
         logger.info("停止 ProxyNode 心跳检测调度器...")
         await scheduler.stop()
         await task_coordinator.release("proxy_node_health")
+
+    auto_fetch_scheduler = get_proxy_node_auto_fetch_scheduler()
+    if auto_fetch_scheduler.running:
+        logger.info("停止 ProxyNode 自动抓取代理任务...")
+        await auto_fetch_scheduler.stop()
+    await task_coordinator.release("proxy_node_auto_fetch")
 
 
 async def _health_check() -> ModuleHealth:

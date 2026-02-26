@@ -777,7 +777,7 @@ function isBatchImport(text: string): boolean {
   if (trimmed.startsWith('[')) {
     try {
       const parsed = JSON.parse(trimmed)
-      return Array.isArray(parsed) && parsed.length > 1
+      return Array.isArray(parsed) && parsed.length > 0
     } catch {
       return false
     }
@@ -796,6 +796,28 @@ function isBatchImport(text: string): boolean {
   return lines.length > 1
 }
 
+function extractRefreshTokenFromObject(obj: Record<string, unknown>): string | null {
+  const directToken = (typeof obj.refresh_token === 'string' && obj.refresh_token.trim())
+    ? obj.refresh_token.trim()
+    : (typeof obj.refreshToken === 'string' && obj.refreshToken.trim())
+      ? obj.refreshToken.trim()
+      : ''
+  if (directToken) return directToken
+
+  const nested = obj.auth_config ?? obj.authConfig
+  if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+    const nestedObj = nested as Record<string, unknown>
+    const nestedToken = (typeof nestedObj.refresh_token === 'string' && nestedObj.refresh_token.trim())
+      ? nestedObj.refresh_token.trim()
+      : (typeof nestedObj.refreshToken === 'string' && nestedObj.refreshToken.trim())
+        ? nestedObj.refreshToken.trim()
+        : ''
+    if (nestedToken) return nestedToken
+  }
+
+  return null
+}
+
 function parseImportText(text: string): { refresh_token: string; name?: string } | null {
   const trimmed = text.trim()
   if (!trimmed) return null
@@ -807,13 +829,15 @@ function parseImportText(text: string): { refresh_token: string; name?: string }
 
   try {
     const parsed: unknown = JSON.parse(trimmed)
-    if (typeof parsed === 'object' && parsed !== null) {
+    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
       const obj = parsed as Record<string, unknown>
-      const refreshToken = obj.refresh_token
-      if (typeof refreshToken === 'string' && refreshToken.trim()) {
+      const refreshToken = extractRefreshTokenFromObject(obj)
+      if (refreshToken) {
         return {
-          refresh_token: refreshToken.trim(),
-          name: (typeof obj.name === 'string' ? obj.name : undefined) || (typeof obj.oauth_email === 'string' ? obj.oauth_email : undefined),
+          refresh_token: refreshToken,
+          name: (typeof obj.name === 'string' ? obj.name : undefined)
+            || (typeof obj.oauth_email === 'string' ? obj.oauth_email : undefined)
+            || (typeof obj.email === 'string' ? obj.email : undefined),
         }
       }
       return null

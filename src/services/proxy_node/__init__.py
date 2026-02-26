@@ -1,6 +1,7 @@
 """代理节点服务"""
 
 from .health_scheduler import ProxyNodeHealthScheduler, get_proxy_node_health_scheduler
+from .auto_fetch_scheduler import ProxyNodeAutoFetchScheduler, get_proxy_node_auto_fetch_scheduler
 from .resolver import (
     build_post_kwargs,
     build_proxy_url,
@@ -23,6 +24,8 @@ from .service import ProxyNodeService, node_to_dict
 __all__ = [
     "ProxyNodeHealthScheduler",
     "get_proxy_node_health_scheduler",
+    "ProxyNodeAutoFetchScheduler",
+    "get_proxy_node_auto_fetch_scheduler",
     "ProxyNodeService",
     "node_to_dict",
     "build_post_kwargs",
