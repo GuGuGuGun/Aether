@@ -37,3 +37,30 @@ def test_normalize_storage_host_matches_manual_node_behavior() -> None:
     assert _normalize_storage_host("http", "1.2.3.4") == "1.2.3.4"
     assert _normalize_storage_host("https", "1.2.3.4") == "https://1.2.3.4"
     assert _normalize_storage_host("socks5", "1.2.3.4") == "socks5://1.2.3.4"
+
+
+def test_parse_proxy_candidates_from_html_table() -> None:
+    page = """
+    <table>
+      <tbody>
+        <tr>
+          <td><span class="badge">socks5</span></td>
+          <td>104.128.135.55</td>
+          <td>7777</td>
+          <td>2026-02-27 12:31</td>
+          <td>
+            <span><span class="datacenter-tag">[机房]</span> 俄罗斯 莫斯科 莫斯科</span>
+            <button data-ip="104.128.135.55" data-port="7777">复制</button>
+            <span>已复制</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    """
+    items = _parse_proxy_candidates(page)
+
+    assert len(items) == 1
+    assert items[0].scheme == "socks5"
+    assert items[0].host == "104.128.135.55"
+    assert items[0].port == 7777
+    assert "俄罗斯" in (items[0].region or "")

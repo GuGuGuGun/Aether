@@ -695,7 +695,7 @@ async function handleAutoFetch() {
   autoFetching.value = true
   try {
     const result = await proxyNodesApi.autoFetch()
-    success(`爬取完成：新增 ${result.created}，更新 ${result.updated}，跳过 ${result.skipped}`)
+    success(`爬取完成：抓取 ${result.fetched}，新增 ${result.created}，更新 ${result.updated}，跳过 ${result.skipped}`)
     await store.fetchNodes()
   } catch (err: unknown) {
     toastError(parseApiError(err, '爬取失败'))

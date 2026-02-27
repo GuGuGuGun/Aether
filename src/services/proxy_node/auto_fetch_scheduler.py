@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import html
 import os
 import re
 import uuid
@@ -50,6 +51,9 @@ _PROXY_LINE_RE = re.compile(
     re.IGNORECASE,
 )
 _METADATA_NOISE_RE = re.compile(r"(?:\s+复制|\s+已复制|复制|已复制)+$", re.IGNORECASE)
+_HTML_TR_RE = re.compile(r"<tr\b[^>]*>(?P<tr>.*?)</tr>", re.IGNORECASE | re.DOTALL)
+_HTML_TD_RE = re.compile(r"<td\b[^>]*>(?P<td>.*?)</td>", re.IGNORECASE | re.DOTALL)
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
 
 
 @dataclass(frozen=True)
@@ -86,6 +90,10 @@ def _cleanup_region(raw_meta: str | None) -> str | None:
 
 
 def _parse_proxy_candidates(page_text: str) -> list[ProxyCandidate]:
+    html_candidates = _parse_proxy_candidates_from_html(page_text)
+    if html_candidates:
+        return html_candidates
+
     candidates: list[ProxyCandidate] = []
     seen: set[tuple[str, str, int]] = set()
 
@@ -118,6 +126,55 @@ def _parse_proxy_candidates(page_text: str) -> list[ProxyCandidate]:
                 host=host,
                 port=port,
                 region=_cleanup_region(match.group("meta")),
+            )
+        )
+
+    return candidates
+
+
+def _clean_html_cell_text(raw_html: str) -> str:
+    text = _HTML_TAG_RE.sub(" ", raw_html)
+    text = html.unescape(text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def _parse_proxy_candidates_from_html(page_text: str) -> list[ProxyCandidate]:
+    candidates: list[ProxyCandidate] = []
+    seen: set[tuple[str, str, int]] = set()
+
+    for tr_match in _HTML_TR_RE.finditer(page_text):
+        tds = _HTML_TD_RE.findall(tr_match.group("tr"))
+        if len(tds) < 3:
+            continue
+
+        scheme = _clean_html_cell_text(tds[0]).lower()
+        if scheme not in {"http", "https", "socks5"}:
+            continue
+
+        host = _clean_html_cell_text(tds[1]).strip()
+        if not host:
+            continue
+
+        try:
+            port = int(_clean_html_cell_text(tds[2]))
+        except (TypeError, ValueError):
+            continue
+        if not 1 <= port <= 65535:
+            continue
+
+        region = _cleanup_region(_clean_html_cell_text(tds[4] if len(tds) >= 5 else ""))
+        key = (scheme, host, port)
+        if key in seen:
+            continue
+        seen.add(key)
+
+        candidates.append(
+            ProxyCandidate(
+                scheme=scheme,
+                host=host,
+                port=port,
+                region=region,
             )
         )
 
