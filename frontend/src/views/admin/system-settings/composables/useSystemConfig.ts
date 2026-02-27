@@ -10,6 +10,7 @@ export interface SystemConfig {
   site_subtitle: string
   // 网络代理
   system_proxy_node_id: string | null
+  enable_proxy_auto_fetch: boolean
   // 基础配置
   default_user_quota_usd: number
   rate_limit_per_minute: number
@@ -52,6 +53,7 @@ const CONFIG_KEYS = [
   'site_subtitle',
   // 网络代理
   'system_proxy_node_id',
+  'enable_proxy_auto_fetch',
   // 基础配置
   'default_user_quota_usd',
   'rate_limit_per_minute',
@@ -95,6 +97,7 @@ function createDefaultConfig(): SystemConfig {
     site_subtitle: 'AI Gateway',
     // 网络代理
     system_proxy_node_id: null,
+    enable_proxy_auto_fetch: false,
     // 基础配置
     default_user_quota_usd: 10.0,
     rate_limit_per_minute: 0,
@@ -158,7 +161,10 @@ export function useSystemConfig() {
 
   const hasProxyConfigChanges = computed(() => {
     if (!originalConfig.value) return false
-    return systemConfig.value.system_proxy_node_id !== originalConfig.value.system_proxy_node_id
+    return (
+      systemConfig.value.system_proxy_node_id !== originalConfig.value.system_proxy_node_id ||
+      systemConfig.value.enable_proxy_auto_fetch !== originalConfig.value.enable_proxy_auto_fetch
+    )
   })
 
   const hasBasicConfigChanges = computed(() => {
@@ -287,13 +293,26 @@ export function useSystemConfig() {
   async function saveProxyConfig() {
     proxyConfigLoading.value = true
     try {
-      await adminApi.updateSystemConfig(
-        'system_proxy_node_id',
-        systemConfig.value.system_proxy_node_id || null,
-        '系统默认代理节点 ID'
+      const configItems = [
+        {
+          key: 'system_proxy_node_id',
+          value: systemConfig.value.system_proxy_node_id || null,
+          description: '系统默认代理节点 ID',
+        },
+        {
+          key: 'enable_proxy_auto_fetch',
+          value: systemConfig.value.enable_proxy_auto_fetch,
+          description: '是否启用代理节点自动爬取',
+        },
+      ]
+      await Promise.all(
+        configItems.map((item) =>
+          adminApi.updateSystemConfig(item.key, item.value, item.description)
+        )
       )
       if (originalConfig.value) {
         originalConfig.value.system_proxy_node_id = systemConfig.value.system_proxy_node_id
+        originalConfig.value.enable_proxy_auto_fetch = systemConfig.value.enable_proxy_auto_fetch
       }
       success('网络代理配置已保存')
     } catch (err) {

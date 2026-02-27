@@ -34,7 +34,9 @@ _CONFIG_CACHE_TTL = 60  # 1 分钟
 _SCHEDULING_CONFIG_CACHE_TTL = 5  # 5 秒
 
 # 需要跨 Worker 快速同步的调度相关配置 key
-SCHEDULING_CONFIG_KEYS = frozenset({"scheduling_mode", "provider_priority_mode"})
+SCHEDULING_CONFIG_KEYS = frozenset(
+    {"scheduling_mode", "provider_priority_mode", "enable_proxy_auto_fetch"}
+)
 
 # 进程内缓存存储: {key: (value, expire_time)}
 _config_cache: dict[str, tuple[Any, float]] = {}
@@ -212,6 +214,10 @@ class SystemConfigService:
         "system_proxy_node_id": {
             "value": None,
             "description": "系统默认代理节点 ID，为空时直连。仅影响提供商出站请求（大模型API/余额查询/OAuth），不影响系统内部接口",
+        },
+        "enable_proxy_auto_fetch": {
+            "value": False,
+            "description": "是否启用代理节点自动爬取（影响代理节点页“爬取”按钮与后台自动同步任务）",
         },
         # SMTP 邮件配置
         "smtp_host": {

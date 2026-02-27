@@ -12,7 +12,28 @@
         {{ loading ? '保存中...' : '保存' }}
       </Button>
     </template>
-    <div class="max-w-md">
+    <div class="max-w-md space-y-4">
+      <div class="rounded-lg border border-border/60 bg-muted/20 p-3">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <Label
+              for="enable-proxy-auto-fetch"
+              class="text-sm cursor-pointer"
+            >
+              启用代理自动爬取
+            </Label>
+            <p class="mt-1 text-xs text-muted-foreground">
+              开启后才允许在代理节点页面执行“爬取”，并启用后台定时自动同步。
+            </p>
+          </div>
+          <Switch
+            id="enable-proxy-auto-fetch"
+            :model-value="enableProxyAutoFetch"
+            @update:model-value="$emit('update:enableProxyAutoFetch', $event)"
+          />
+        </div>
+      </div>
+
       <Label class="block text-sm font-medium mb-1">
         默认代理节点
       </Label>
@@ -46,6 +67,7 @@
 <script setup lang="ts">
 import Button from '@/components/ui/button.vue'
 import Label from '@/components/ui/label.vue'
+import Switch from '@/components/ui/switch.vue'
 import Select from '@/components/ui/select.vue'
 import SelectTrigger from '@/components/ui/select-trigger.vue'
 import SelectValue from '@/components/ui/select-value.vue'
@@ -63,6 +85,7 @@ interface ProxyNode {
 
 defineProps<{
   proxyNodeId: string | null
+  enableProxyAutoFetch: boolean
   onlineNodes: ProxyNode[]
   loading: boolean
   hasChanges: boolean
@@ -71,5 +94,6 @@ defineProps<{
 defineEmits<{
   save: []
   'update:proxyNodeId': [value: string | null]
+  'update:enableProxyAutoFetch': [value: boolean]
 }>()
 </script>

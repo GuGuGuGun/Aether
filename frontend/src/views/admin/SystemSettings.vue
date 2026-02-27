@@ -46,11 +46,13 @@
           <ProxyConfigSection
             id="section-proxy"
             :proxy-node-id="systemConfig.system_proxy_node_id"
+            :enable-proxy-auto-fetch="systemConfig.enable_proxy_auto_fetch"
             :online-nodes="proxyNodesStore.onlineNodes"
             :loading="proxyConfigLoading"
             :has-changes="hasProxyConfigChanges"
             @save="saveProxyConfig"
             @update:proxy-node-id="systemConfig.system_proxy_node_id = $event"
+            @update:enable-proxy-auto-fetch="systemConfig.enable_proxy_auto_fetch = $event"
           />
 
           <!-- 基础配置 -->

@@ -13,6 +13,7 @@ from typing import Any
 
 import httpx
 
+from src.core.exceptions import InvalidRequestException
 from src.core.logger import logger
 from src.database import create_session
 from src.models.database import ProxyNode, ProxyNodeStatus
@@ -181,6 +182,36 @@ def _parse_proxy_candidates_from_html(page_text: str) -> list[ProxyCandidate]:
     return candidates
 
 
+def _coerce_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on", "y"}
+    return bool(value)
+
+
+def _is_proxy_auto_fetch_enabled_in_settings() -> bool:
+    from src.services.system.config import SystemConfigService
+
+    db = create_session()
+    try:
+        config_value = SystemConfigService.get_config(db, "enable_proxy_auto_fetch", False)
+        return _coerce_bool(config_value)
+    except Exception as exc:
+        logger.warning("Failed to read enable_proxy_auto_fetch from system config: {}", exc)
+        return False
+    finally:
+        db.close()
+
+
+async def _is_proxy_auto_fetch_enabled() -> bool:
+    if not _AUTO_FETCH_ENABLED:
+        return False
+    return await asyncio.to_thread(_is_proxy_auto_fetch_enabled_in_settings)
+
+
 async def _fetch_proxy_candidates() -> list[ProxyCandidate]:
     headers = {"User-Agent": "AetherProxyAutoFetcher/1.0"}
     timeout = httpx.Timeout(15.0, connect=10.0)
@@ -192,8 +223,21 @@ async def _fetch_proxy_candidates() -> list[ProxyCandidate]:
         return parsed[:_AUTO_FETCH_MAX_ITEMS]
 
 
-async def run_proxy_auto_fetch_once() -> dict[str, Any]:
+async def run_proxy_auto_fetch_once(*, require_enabled: bool = True) -> dict[str, Any]:
     """Run one immediate fetch/sync cycle, usually triggered by admin action."""
+    enabled = await _is_proxy_auto_fetch_enabled()
+    if not enabled:
+        if require_enabled:
+            raise InvalidRequestException("请先在系统设置中开启“自动爬取代理节点”")
+        return {
+            "source_url": _SOURCE_URL,
+            "fetched": 0,
+            "created": 0,
+            "updated": 0,
+            "skipped": 0,
+            "disabled": True,
+        }
+
     candidates = await _fetch_proxy_candidates()
     stats = await asyncio.to_thread(_sync_candidates_to_db, candidates)
     return {
@@ -202,6 +246,7 @@ async def run_proxy_auto_fetch_once() -> dict[str, Any]:
         "created": stats["created"],
         "updated": stats["updated"],
         "skipped": stats["skipped"],
+        "disabled": False,
     }
 
 
@@ -301,6 +346,7 @@ class ProxyNodeAutoFetchScheduler:
 
     def __init__(self) -> None:
         self.running = False
+        self._disabled_log_emitted = False
 
     async def start(self) -> Any:
         if self.running:
@@ -338,7 +384,13 @@ class ProxyNodeAutoFetchScheduler:
             return
 
         try:
-            stats = await run_proxy_auto_fetch_once()
+            stats = await run_proxy_auto_fetch_once(require_enabled=False)
+            if stats.get("disabled"):
+                if not self._disabled_log_emitted:
+                    logger.info("Proxy auto fetch is disabled by system setting enable_proxy_auto_fetch")
+                    self._disabled_log_emitted = True
+                return
+            self._disabled_log_emitted = False
             logger.info(
                 "Proxy auto fetch synced: fetched={}, created={}, updated={}, skipped={}",
                 stats["fetched"],
