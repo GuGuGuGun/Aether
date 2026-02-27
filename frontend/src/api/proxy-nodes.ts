@@ -68,6 +68,15 @@ export interface ProxyNodeTestResult {
   error: string | null
 }
 
+export interface ProxyNodeAutoFetchResult {
+  message: string
+  source_url: string
+  fetched: number
+  created: number
+  updated: number
+  skipped: number
+}
+
 export const proxyNodesApi = {
   async listProxyNodes(params?: { status?: string; skip?: number; limit?: number }): Promise<ProxyNodeListResponse> {
     const response = await apiClient.get<ProxyNodeListResponse>('/api/admin/proxy-nodes', { params })
@@ -101,6 +110,11 @@ export const proxyNodesApi = {
 
   async testProxyUrl(data: { proxy_url: string; username?: string; password?: string }): Promise<ProxyNodeTestResult> {
     const response = await apiClient.post<ProxyNodeTestResult>('/api/admin/proxy-nodes/test-url', data)
+    return response.data
+  },
+
+  async autoFetch(): Promise<ProxyNodeAutoFetchResult> {
+    const response = await apiClient.post<ProxyNodeAutoFetchResult>('/api/admin/proxy-nodes/auto-fetch')
     return response.data
   },
 }

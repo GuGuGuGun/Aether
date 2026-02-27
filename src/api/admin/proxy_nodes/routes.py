@@ -18,6 +18,7 @@ from src.api.base.context import ApiRequestContext
 from src.api.base.pipeline import ApiRequestPipeline
 from src.core.exceptions import InvalidRequestException
 from src.database import get_db
+from src.services.proxy_node.auto_fetch_scheduler import run_proxy_auto_fetch_once
 from src.services.proxy_node.service import ProxyNodeService, node_to_dict
 
 router = APIRouter(prefix="/api/admin/proxy-nodes", tags=["Admin - Proxy Nodes"])
@@ -210,6 +211,12 @@ async def test_proxy_node(node_id: str, request: Request, db: Session = Depends(
 @router.post("/test-url")
 async def test_proxy_url(request: Request, db: Session = Depends(get_db)) -> Any:
     adapter = AdminTestProxyUrlAdapter()
+    return await pipeline.run(adapter=adapter, http_request=request, db=db, mode=adapter.mode)
+
+
+@router.post("/auto-fetch")
+async def auto_fetch_proxy_nodes(request: Request, db: Session = Depends(get_db)) -> Any:
+    adapter = AdminAutoFetchProxyNodesAdapter()
     return await pipeline.run(adapter=adapter, http_request=request, db=db, mode=adapter.mode)
 
 
@@ -517,3 +524,23 @@ class AdminTestProxyUrlAdapter(AdminApiAdapter):
             username=req.username,
             password=req.password,
         )
+
+
+@dataclass
+class AdminAutoFetchProxyNodesAdapter(AdminApiAdapter):
+    """立即触发一次代理源爬取并同步到代理节点。"""
+
+    name: str = "admin_auto_fetch_proxy_nodes"
+
+    async def handle(self, context: ApiRequestContext) -> Any:
+        result = await run_proxy_auto_fetch_once()
+        context.add_audit_metadata(
+            action="proxy_node_auto_fetch",
+            fetched=result["fetched"],
+            created=result["created"],
+            updated=result["updated"],
+        )
+        return {
+            "message": "auto fetch completed",
+            **result,
+        }

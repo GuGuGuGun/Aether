@@ -21,6 +21,23 @@
                 <Plus class="w-3 h-3 mr-1" />
                 添加
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                class="h-7 text-xs"
+                :disabled="autoFetching"
+                @click="handleAutoFetch"
+              >
+                <Loader2
+                  v-if="autoFetching"
+                  class="w-3 h-3 mr-1 animate-spin"
+                />
+                <Download
+                  v-else
+                  class="w-3 h-3 mr-1"
+                />
+                爬取
+              </Button>
               <RefreshButton
                 :loading="store.loading"
                 @click="refresh"
@@ -103,6 +120,23 @@
               @click="showAddDialog = true"
             >
               <Plus class="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-8 w-8"
+              :title="autoFetching ? '爬取中...' : '立即爬取'"
+              :disabled="autoFetching"
+              @click="handleAutoFetch"
+            >
+              <Loader2
+                v-if="autoFetching"
+                class="h-3.5 w-3.5 animate-spin"
+              />
+              <Download
+                v-else
+                class="h-3.5 w-3.5"
+              />
             </Button>
             <RefreshButton
               :loading="store.loading"
@@ -580,7 +614,7 @@ import {
   Dialog,
 } from '@/components/ui'
 
-import { Search, Trash2, Plus, SquarePen, Activity, Loader2, Settings } from 'lucide-vue-next'
+import { Search, Trash2, Plus, SquarePen, Activity, Loader2, Settings, Download } from 'lucide-vue-next'
 import { parseApiError } from '@/utils/errorParser'
 import { formatRegion } from '@/utils/region'
 import HardwareTooltip from './components/HardwareTooltip.vue'
@@ -619,6 +653,7 @@ const configForm = ref({
 // 测试连通性
 const testingNodes = ref(new Set<string>())
 const testingUrl = ref(false)
+const autoFetching = ref(false)
 
 const filteredNodes = computed(() => {
   let filtered = [...store.nodes]
@@ -653,6 +688,20 @@ onMounted(async () => {
 
 async function refresh() {
   await store.fetchNodes()
+}
+
+async function handleAutoFetch() {
+  if (autoFetching.value) return
+  autoFetching.value = true
+  try {
+    const result = await proxyNodesApi.autoFetch()
+    success(`爬取完成：新增 ${result.created}，更新 ${result.updated}，跳过 ${result.skipped}`)
+    await store.fetchNodes()
+  } catch (err: unknown) {
+    toastError(parseApiError(err, '爬取失败'))
+  } finally {
+    autoFetching.value = false
+  }
 }
 
 async function handleTestUrl() {

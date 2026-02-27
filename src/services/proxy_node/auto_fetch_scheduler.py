@@ -135,6 +135,19 @@ async def _fetch_proxy_candidates() -> list[ProxyCandidate]:
         return parsed[:_AUTO_FETCH_MAX_ITEMS]
 
 
+async def run_proxy_auto_fetch_once() -> dict[str, Any]:
+    """Run one immediate fetch/sync cycle, usually triggered by admin action."""
+    candidates = await _fetch_proxy_candidates()
+    stats = await asyncio.to_thread(_sync_candidates_to_db, candidates)
+    return {
+        "source_url": _SOURCE_URL,
+        "fetched": stats["fetched"],
+        "created": stats["created"],
+        "updated": stats["updated"],
+        "skipped": stats["skipped"],
+    }
+
+
 def _sync_candidates_to_db(candidates: list[ProxyCandidate]) -> dict[str, int]:
     now = datetime.now(timezone.utc)
     db = create_session()
@@ -268,8 +281,7 @@ class ProxyNodeAutoFetchScheduler:
             return
 
         try:
-            candidates = await _fetch_proxy_candidates()
-            stats = await asyncio.to_thread(_sync_candidates_to_db, candidates)
+            stats = await run_proxy_auto_fetch_once()
             logger.info(
                 "Proxy auto fetch synced: fetched={}, created={}, updated={}, skipped={}",
                 stats["fetched"],
