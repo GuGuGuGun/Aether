@@ -6,7 +6,7 @@
     size="md"
     @update:model-value="handleDialogUpdate"
   >
-    <!-- 右上角代理按钮 -->
+    <!-- 鍙充笂瑙掍唬鐞嗘寜閽?-->
     <template #header-actions>
       <Popover
         :open="proxyPopoverOpen"
@@ -51,7 +51,7 @@
               @update:model-value="(v: string) => { selectedProxyNodeId = v; proxyPopoverOpen = false }"
             />
             <p class="text-[10px] text-muted-foreground">
-              {{ selectedProxyNodeId ? '授权、刷新、额度查询均走此代理' : '未设置，依次回退到提供商代理 → 系统代理' }}
+              {{ selectedProxyNodeId ? '授权、刷新、额度查询均走此代理' : '未设置，依次回退到提供商代理 -> 系统代理' }}
             </p>
           </div>
         </PopoverContent>
@@ -59,7 +59,7 @@
     </template>
 
     <div class="space-y-4">
-      <!-- Tab 切换 -->
+      <!-- Tab 鍒囨崲 -->
       <div class="flex rounded-lg border border-border p-0.5 bg-muted/30">
         <button
           class="flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all"
@@ -83,21 +83,21 @@
         </button>
       </div>
 
-      <!-- Tab 内容：grid 叠放，高度取较高者 -->
+      <!-- Tab 鍐呭锛歡rid 鍙犳斁锛岄珮搴﹀彇杈冮珮鑰?-->
       <div class="grid [&>*]:col-start-1 [&>*]:row-start-1">
-        <!-- ===== 获取授权 / 设备授权 ===== -->
+        <!-- ===== 鑾峰彇鎺堟潈 / 璁惧鎺堟潈 ===== -->
         <div
           class="space-y-4 transition-opacity duration-150"
           :class="mode === 'oauth' ? 'opacity-100' : 'opacity-0 pointer-events-none'"
         >
-          <!-- Kiro: 设备授权模式 -->
+          <!-- Kiro: 璁惧鎺堟潈妯″紡 -->
           <template v-if="isKiroProvider">
-            <!-- 初始状态：选择授权类型 + 开始 -->
+            <!-- 鍒濆鐘舵€侊細閫夋嫨鎺堟潈绫诲瀷 + 寮€濮?-->
             <div
               v-if="!device.session_id && !device.starting"
               class="space-y-3"
             >
-              <!-- Builder ID / Identity Center 切换 -->
+              <!-- Builder ID / Identity Center 鍒囨崲 -->
               <div class="grid grid-cols-2 gap-1.5">
                 <button
                   v-for="opt in ([
@@ -115,16 +115,15 @@
                 </button>
               </div>
 
-              <!-- grid 叠放保持高度稳定 -->
+              <!-- grid 鍙犳斁淇濇寔楂樺害绋冲畾 -->
               <div class="grid [&>*]:col-start-1 [&>*]:row-start-1">
-                <!-- Builder ID: 说明文字 -->
+                <!-- Builder ID: 璇存槑鏂囧瓧 -->
                 <div
                   class="flex items-center justify-center transition-opacity duration-150"
                   :class="device.auth_type === 'builder_id' ? 'opacity-100' : 'opacity-0 pointer-events-none'"
                 >
                   <p class="text-xs text-muted-foreground">
-                    使用个人 AWS Builder ID 进行设备授权，无需额外配置。
-                  </p>
+                    浣跨敤涓汉 AWS Builder ID 杩涜璁惧鎺堟潈锛屾棤闇€棰濆閰嶇疆銆?                  </p>
                 </div>
 
                 <!-- Identity Center: Start URL + Region -->
@@ -159,11 +158,11 @@
                     </div>
                   </div>
                   <div class="space-y-1.5">
-                    <label class="text-xs font-medium text-muted-foreground">TOTP Secret (可选)</label>
+                    <label class="text-xs font-medium text-muted-foreground">TOTP Secret (鍙€?</label>
                     <input
                       v-model="device.totp_secret"
                       type="text"
-                      placeholder="Base32 secret, 如 JBSWY3DPEHPK3PXP"
+                      placeholder="Base32 secret, 濡?JBSWY3DPEHPK3PXP"
                       class="w-full h-8 px-2 text-xs rounded-md border border-border bg-background font-mono"
                       spellcheck="false"
                     >
@@ -176,11 +175,10 @@
                 :disabled="device.auth_type === 'identity_center' && !device.start_url.trim()"
                 @click="startDeviceAuth"
               >
-                开始授权
-              </Button>
+                寮€濮嬫巿鏉?              </Button>
             </div>
 
-            <!-- 发起中 -->
+            <!-- 鍙戣捣涓?-->
             <div
               v-else-if="device.starting"
               class="flex items-center justify-center py-12"
@@ -188,16 +186,16 @@
               <div class="text-center">
                 <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-3" />
                 <p class="text-xs text-muted-foreground">
-                  正在注册设备...
+                  姝ｅ湪娉ㄥ唽璁惧...
                 </p>
               </div>
             </div>
 
-            <!-- 等待用户授权 -->
+            <!-- 绛夊緟鐢ㄦ埛鎺堟潈 -->
             <template v-else-if="device.session_id && device.status === 'pending'">
               <div class="rounded-xl border border-border bg-muted/20 p-5">
                 <div class="flex flex-col items-center text-center space-y-4">
-                  <!-- 脉冲动画图标 -->
+                  <!-- 鑴夊啿鍔ㄧ敾鍥炬爣 -->
                   <div class="relative">
                     <div class="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
                     <div class="relative w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -205,23 +203,21 @@
                     </div>
                   </div>
 
-                  <!-- 提示文字 -->
+                  <!-- 鎻愮ず鏂囧瓧 -->
                   <div class="space-y-1">
                     <p class="text-sm font-medium">
-                      在浏览器中完成授权
-                    </p>
+                      鍦ㄦ祻瑙堝櫒涓畬鎴愭巿鏉?                    </p>
                     <p class="text-xs text-muted-foreground">
-                      授权完成后此页面将自动更新
-                    </p>
+                      鎺堟潈瀹屾垚鍚庢椤甸潰灏嗚嚜鍔ㄦ洿鏂?                    </p>
                   </div>
 
-                  <!-- 倒计时 -->
+                  <!-- 鍊掕鏃?-->
                   <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <div class="animate-spin rounded-full h-3 w-3 border-[1.5px] border-primary/30 border-t-primary" />
-                    <span>剩余 {{ deviceCountdownFormatted }}</span>
+                    <span>鍓╀綑 {{ deviceCountdownFormatted }}</span>
                   </div>
 
-                  <!-- TOTP 验证码 -->
+                  <!-- TOTP 楠岃瘉鐮?-->
                   <div
                     v-if="totp.code.value"
                     class="w-full rounded-lg border border-border bg-background p-3"
@@ -229,7 +225,7 @@
                     <div class="flex items-center justify-between">
                       <div class="flex items-center gap-2">
                         <ShieldCheck class="w-3.5 h-3.5 text-primary" />
-                        <span class="text-[10px] text-muted-foreground">MFA 验证码</span>
+                        <span class="text-[10px] text-muted-foreground">MFA 楠岃瘉鐮?/span>
                       </div>
                       <div class="flex items-center gap-1.5">
                         <span
@@ -237,7 +233,7 @@
                         >{{ totp.code.value }}</span>
                         <button
                           class="p-1 rounded hover:bg-muted transition-colors"
-                          title="复制验证码"
+                          title="澶嶅埗楠岃瘉鐮?
                           @click="copyToClipboard(totp.code.value)"
                         >
                           <Copy class="w-3 h-3 text-muted-foreground" />
@@ -259,7 +255,7 @@
                     </div>
                   </div>
 
-                  <!-- 操作按钮 -->
+                  <!-- 鎿嶄綔鎸夐挳 -->
                   <div class="flex gap-2 w-full">
                     <Button
                       class="flex-1"
@@ -267,7 +263,7 @@
                       @click="openDeviceVerificationUrl"
                     >
                       <ExternalLink class="w-3.5 h-3.5 mr-1.5" />
-                      打开授权页面
+                      鎵撳紑鎺堟潈椤甸潰
                     </Button>
                     <Button
                       size="sm"
@@ -281,7 +277,7 @@
               </div>
             </template>
 
-            <!-- 错误/过期 -->
+            <!-- 閿欒/杩囨湡 -->
             <div
               v-else-if="device.status === 'error' || device.status === 'expired'"
             >
@@ -292,10 +288,10 @@
                   </div>
                   <div class="space-y-1">
                     <p class="text-sm font-medium text-destructive">
-                      {{ device.status === 'expired' ? '授权已过期' : '授权失败' }}
+                      {{ device.status === 'expired' ? '鎺堟潈宸茶繃鏈? : '鎺堟潈澶辫触' }}
                     </p>
                     <p class="text-xs text-muted-foreground">
-                      {{ device.error || '请重试' }}
+                      {{ device.error || '璇烽噸璇? }}
                     </p>
                   </div>
                   <Button
@@ -303,14 +299,13 @@
                     variant="outline"
                     @click="resetDevice"
                   >
-                    重新开始
-                  </Button>
+                    閲嶆柊寮€濮?                  </Button>
                 </div>
               </div>
             </div>
           </template>
 
-          <!-- 非 Kiro: 原有 OAuth 流程 -->
+          <!-- 闈?Kiro: 鍘熸湁 OAuth 娴佺▼ -->
           <template v-else>
             <div
               v-if="oauth.starting && !oauth.authorization_url"
@@ -319,7 +314,7 @@
               <div class="text-center">
                 <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-3" />
                 <p class="text-xs text-muted-foreground">
-                  正在准备授权...
+                  姝ｅ湪鍑嗗鎺堟潈...
                 </p>
               </div>
             </div>
@@ -328,7 +323,7 @@
               <div class="space-y-2">
                 <div class="flex items-center gap-2">
                   <span class="flex items-center justify-center w-4 h-4 rounded-full bg-primary/10 text-primary text-[10px] font-semibold shrink-0">1</span>
-                  <span class="text-xs font-medium">前往授权</span>
+                  <span class="text-xs font-medium">鍓嶅線鎺堟潈</span>
                 </div>
                 <div class="flex gap-2 pl-6">
                   <Button
@@ -337,7 +332,7 @@
                     @click="openAuthorizationUrl"
                   >
                     <ExternalLink class="w-3 h-3 mr-1" />
-                    打开
+                    鎵撳紑
                   </Button>
                   <Button
                     size="sm"
@@ -346,7 +341,7 @@
                     @click="copyToClipboard(oauth.authorization_url)"
                   >
                     <Copy class="w-3 h-3 mr-1" />
-                    复制
+                    澶嶅埗
                   </Button>
                 </div>
               </div>
@@ -354,7 +349,7 @@
               <div class="space-y-2">
                 <div class="flex items-center gap-2">
                   <span class="flex items-center justify-center w-4 h-4 rounded-full bg-primary/10 text-primary text-[10px] font-semibold shrink-0">2</span>
-                  <span class="text-xs font-medium">粘贴回调 URL</span>
+                  <span class="text-xs font-medium">绮樿创鍥炶皟 URL</span>
                 </div>
                 <div class="pl-6">
                   <Textarea
@@ -378,17 +373,17 @@
           <input
             ref="fileInputRef"
             type="file"
-            accept=".json"
+            accept=".json,.txt,application/json,text/plain"
             class="hidden"
             @change="handleFileSelect"
           >
 
-          <!-- 主区域：拖拽 或 粘贴输入框（同一位置切换） -->
+          <!-- 涓诲尯鍩燂細鎷栨嫿 鎴?绮樿创杈撳叆妗嗭紙鍚屼竴浣嶇疆鍒囨崲锛?-->
           <div
             v-if="!importText"
             class="mt-3"
           >
-            <!-- 拖拽模式 -->
+            <!-- 鎷栨嫿妯″紡 -->
             <div
               v-if="!showManualInput"
               class="rounded-xl border-2 border-dashed transition-colors cursor-pointer"
@@ -409,13 +404,13 @@
                     拖入授权文件或点击选择
                   </p>
                   <p class="text-[10px] text-muted-foreground mt-0.5">
-                    支持 .json 格式
+                    支持 .json / .txt 格式
                   </p>
                 </div>
               </div>
             </div>
 
-            <!-- 粘贴模式 -->
+            <!-- 绮樿创妯″紡 -->
             <Textarea
               v-else
               v-model="manualPasteText"
@@ -426,7 +421,7 @@
             />
           </div>
 
-          <!-- 底部切换链接：占满剩余空间居中 -->
+          <!-- 搴曢儴鍒囨崲閾炬帴锛氬崰婊″墿浣欑┖闂村眳涓?-->
           <div
             v-if="!importText"
             class="flex-1 flex items-center justify-center"
@@ -443,11 +438,11 @@
               class="text-xs text-muted-foreground hover:text-foreground transition-colors"
               @click="showManualInput = false"
             >
-              或选择 JSON 文件导入
+              或选择 JSON / TXT 文件导入
             </button>
           </div>
 
-          <!-- 已有内容（文件导入后）：显示文本框 -->
+          <!-- 宸叉湁鍐呭锛堟枃浠跺鍏ュ悗锛夛細鏄剧ず鏂囨湰妗?-->
           <div
             v-if="importText"
             class="space-y-2"
@@ -533,23 +528,22 @@ const { copyToClipboard } = useClipboard()
 const proxyNodesStore = useProxyNodesStore()
 const totp = useTotp()
 
-// 代理节点选择
+// 浠ｇ悊鑺傜偣閫夋嫨
 const proxyPopoverOpen = ref(false)
 const selectedProxyNodeId = ref('')
 
-/** 获取已选代理节点的显示名称 */
+/** 鑾峰彇宸查€変唬鐞嗚妭鐐圭殑鏄剧ず鍚嶇О */
 function getSelectedNodeLabel(): string {
   if (!selectedProxyNodeId.value) return ''
   const node = proxyNodesStore.nodes.find(n => n.id === selectedProxyNodeId.value)
   return node ? node.name : `${selectedProxyNodeId.value.slice(0, 8)  }...`
 }
 
-// 模式
+// 妯″紡
 type DialogMode = 'oauth' | 'import'
 const mode = ref<DialogMode>('oauth')
 
-// OAuth 状态
-interface OAuthState {
+// OAuth 鐘舵€?interface OAuthState {
   authorization_url: string
   redirect_uri: string
   instructions: string
@@ -573,8 +567,7 @@ function createInitialOAuthState(): OAuthState {
 
 const oauth = ref<OAuthState>(createInitialOAuthState())
 
-// 设备授权状态
-type DeviceAuthType = 'builder_id' | 'identity_center'
+// 璁惧鎺堟潈鐘舵€?type DeviceAuthType = 'builder_id' | 'identity_center'
 
 interface DeviceAuthState {
   auth_type: DeviceAuthType
@@ -587,7 +580,7 @@ interface DeviceAuthState {
   verification_uri: string
   verification_uri_complete: string
   expires_at: number  // unix timestamp (ms)
-  interval: number    // 轮询间隔 (秒)
+  interval: number    // 杞闂撮殧 (绉?
   status: 'idle' | 'pending' | 'authorized' | 'expired' | 'error'
   error: string
 }
@@ -618,8 +611,7 @@ let devicePollTimer: ReturnType<typeof setTimeout> | null = null
 const deviceCountdown = ref(0)
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
-// 导入状态
-const importText = ref('')
+// 瀵煎叆鐘舵€?const importText = ref('')
 const importFileName = ref('')
 const manualPasteText = ref('')
 const importing = ref(false)
@@ -743,8 +735,8 @@ async function initOAuth() {
     oauth.value.instructions = resp.instructions
     oauth.value.provider_type = resp.provider_type
   } catch (err: unknown) {
-    const errorMessage = parseApiError(err, '初始化授权失败')
-    showError(errorMessage, '错误')
+    const errorMessage = parseApiError(err, '鍒濆鍖栨巿鏉冨け璐?)
+    showError(errorMessage, '閿欒')
     mode.value = 'import'
   } finally {
     oauth.value.starting = false
@@ -759,21 +751,21 @@ async function handleCompleteOAuth() {
       callback_url: oauth.value.callback_url.trim(),
       proxy_node_id: selectedProxyNodeId.value || undefined,
     })
-    success('授权成功，账号已添加')
+    success('鎺堟潈鎴愬姛锛岃处鍙峰凡娣诲姞')
     emit('saved')
     handleClose()
   } catch (err: unknown) {
-    const errorMessage = parseApiError(err, '完成授权失败')
-    showError(errorMessage, '错误')
+    const errorMessage = parseApiError(err, '瀹屾垚鎺堟潈澶辫触')
+    showError(errorMessage, '閿欒')
   } finally {
     oauth.value.completing = false
   }
 }
 
-// 检测是否为批量导入格式
+// 妫€娴嬫槸鍚︿负鎵归噺瀵煎叆鏍煎紡
 function isBatchImport(text: string): boolean {
   const trimmed = text.trim()
-  // JSON 数组
+  // JSON 鏁扮粍
   if (trimmed.startsWith('[')) {
     try {
       const parsed = JSON.parse(trimmed)
@@ -782,16 +774,14 @@ function isBatchImport(text: string): boolean {
       return false
     }
   }
-  // 单个 JSON 对象（可能是 pretty-printed 多行）不算批量导入
-  if (trimmed.startsWith('{')) {
+  // 鍗曚釜 JSON 瀵硅薄锛堝彲鑳芥槸 pretty-printed 澶氳锛変笉绠楁壒閲忓鍏?  if (trimmed.startsWith('{')) {
     try {
       JSON.parse(trimmed)
-      return false // 可解析的单个 JSON 对象，走单条导入
+      return false // 鍙В鏋愮殑鍗曚釜 JSON 瀵硅薄锛岃蛋鍗曟潯瀵煎叆
     } catch {
-      // 解析失败：可能是多个 JSON 对象（JSON Lines 格式），继续检查
-    }
+      // 瑙ｆ瀽澶辫触锛氬彲鑳芥槸澶氫釜 JSON 瀵硅薄锛圝SON Lines 鏍煎紡锛夛紝缁х画妫€鏌?    }
   }
-  // 多行文本（纯 Token 一行一个）
+  // 澶氳鏂囨湰锛堢函 Token 涓€琛屼竴涓級
   const lines = trimmed.split('\n').filter(line => line.trim() && !line.trim().startsWith('#'))
   return lines.length > 1
 }
@@ -889,9 +879,7 @@ async function handleImport() {
   importing.value = true
   try {
     const proxyNodeId = selectedProxyNodeId.value || undefined
-    // 检测是否为批量导入
     if (isBatchImport(inputText)) {
-      // 批量导入
       const result = await batchImportOAuth(props.providerId, inputText, proxyNodeId)
       if (result.success > 0) {
         if (result.failed > 0) {
@@ -902,12 +890,10 @@ async function handleImport() {
         emit('saved')
         handleClose()
       } else {
-        // 全部失败，显示第一个错误
         const firstError = result.results.find(r => r.status === 'error')
         showError(firstError?.error || '批量导入失败', '导入失败')
       }
     } else {
-      // 单条导入
       const parsed = parseImportText(inputText)
       if (!parsed) {
         showError('无法解析输入内容，请检查格式', '格式错误')
@@ -928,8 +914,7 @@ async function handleImport() {
     importing.value = false
   }
 }
-
-// ==== 设备授权 ====
+// ==== 璁惧鎺堟潈 ====
 
 function openDeviceVerificationUrl() {
   const url = device.value.verification_uri_complete || device.value.verification_uri
@@ -968,13 +953,13 @@ async function startDeviceAuth() {
     device.value.status = 'pending'
     startCountdown()
     scheduleDevicePoll()
-    // 如果配置了 TOTP secret，启动验证码生成
+    // 濡傛灉閰嶇疆浜?TOTP secret锛屽惎鍔ㄩ獙璇佺爜鐢熸垚
     if (device.value.totp_secret.trim()) {
       totp.start(device.value.totp_secret.trim())
     }
   } catch (err: unknown) {
-    const errorMessage = parseApiError(err, '发起设备授权失败')
-    showError(errorMessage, '错误')
+    const errorMessage = parseApiError(err, '鍙戣捣璁惧鎺堟潈澶辫触')
+    showError(errorMessage, '閿欒')
     device.value.status = 'error'
     device.value.error = errorMessage
   } finally {
@@ -1000,7 +985,7 @@ async function pollDevice() {
         stopDevicePolling()
         totp.stop()
         device.value.status = 'authorized'
-        success(result.email ? `授权成功: ${result.email}` : '授权成功，账号已添加')
+        success(result.email ? `鎺堟潈鎴愬姛: ${result.email}` : '鎺堟潈鎴愬姛锛岃处鍙峰凡娣诲姞')
         emit('saved')
         handleClose()
         return
@@ -1014,16 +999,16 @@ async function pollDevice() {
       case 'expired':
         stopDevicePolling()
         device.value.status = 'expired'
-        device.value.error = result.error || '设备码已过期'
+        device.value.error = result.error || '璁惧鐮佸凡杩囨湡'
         return
       case 'error':
         stopDevicePolling()
         device.value.status = 'error'
-        device.value.error = result.error || '授权失败'
+        device.value.error = result.error || '鎺堟潈澶辫触'
         return
     }
   } catch {
-    // 网络错误等，继续轮询
+    // 缃戠粶閿欒绛夛紝缁х画杞
     scheduleDevicePoll()
   }
 }

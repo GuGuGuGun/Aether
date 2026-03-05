@@ -1171,67 +1171,6 @@ def _extract_refresh_token(payload: dict[str, Any]) -> str | None:
     return None
 
 
-def _extract_import_name(payload: dict[str, Any]) -> str | None:
-    """Extract optional account name from imported payload."""
-    for key in ("name", "key_name", "account_name", "oauth_email", "email"):
-        value = payload.get(key)
-        if isinstance(value, str) and value.strip():
-            return value.strip()
-    return None
-
-
-def _parse_standard_oauth_batch_input(raw_input: str) -> list[dict[str, str | None]]:
-    """Parse standard OAuth batch import input and preserve optional per-item names."""
-    raw = raw_input.strip()
-    if not raw:
-        return []
-
-    result: list[dict[str, str | None]] = []
-
-    def _append(token: str | None, name: str | None = None) -> None:
-        if token and token.strip():
-            result.append(
-                {
-                    "refresh_token": token.strip(),
-                    "name": name.strip() if isinstance(name, str) and name.strip() else None,
-                }
-            )
-
-    if raw.startswith("[") or raw.startswith("{"):
-        try:
-            parsed = json.loads(raw)
-            if isinstance(parsed, list):
-                for item in parsed:
-                    if isinstance(item, str):
-                        _append(item)
-                    elif isinstance(item, dict):
-                        _append(_extract_refresh_token(item), _extract_import_name(item))
-                return result
-            if isinstance(parsed, dict):
-                _append(_extract_refresh_token(parsed), _extract_import_name(parsed))
-                return result
-        except json.JSONDecodeError:
-            pass
-
-    for line in raw.splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        if stripped.startswith("{") and stripped.endswith("}"):
-            try:
-                maybe_obj = json.loads(stripped)
-                if isinstance(maybe_obj, dict):
-                    token = _extract_refresh_token(maybe_obj)
-                    if token:
-                        _append(token, _extract_import_name(maybe_obj))
-                        continue
-            except json.JSONDecodeError:
-                pass
-        _append(stripped)
-
-    return result
-
-
 def _parse_tokens_input(raw_input: str) -> list[str]:
     """
     解析通用 Token 导入输入，支持多种格式。
@@ -1246,8 +1185,52 @@ def _parse_tokens_input(raw_input: str) -> list[str]:
 
     返回: Token 字符串列表
     """
-    parsed_items = _parse_standard_oauth_batch_input(raw_input)
-    return [item["refresh_token"] for item in parsed_items if item.get("refresh_token")]
+    raw = raw_input.strip()
+    if not raw:
+        return []
+
+    result: list[str] = []
+
+    # 尝试解析为 JSON（数组或对象）
+    if raw.startswith("[") or raw.startswith("{"):
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, list):
+                for item in parsed:
+                    if isinstance(item, str) and item.strip():
+                        result.append(item.strip())
+                    elif isinstance(item, dict):
+                        token = _extract_refresh_token(item)
+                        if token:
+                            result.append(token)
+                return result
+            if isinstance(parsed, dict):
+                token = _extract_refresh_token(parsed)
+                if token:
+                    return [token]
+                return []
+        except json.JSONDecodeError:
+            pass  # 不是有效 JSON，继续尝试其他格式
+
+    # 纯 Token 导入（一行一个），兼容 JSON Lines 对象
+    lines = raw.splitlines()
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):  # 忽略空行和注释行
+            continue
+        if stripped.startswith("{") and stripped.endswith("}"):
+            try:
+                maybe_obj = json.loads(stripped)
+                if isinstance(maybe_obj, dict):
+                    token = _extract_refresh_token(maybe_obj)
+                    if token:
+                        result.append(token)
+                        continue
+            except json.JSONDecodeError:
+                pass
+        result.append(stripped)
+
+    return result
 
 
 def _parse_kiro_import_input(raw_input: str) -> list[dict[str, Any]]:
@@ -1628,9 +1611,9 @@ async def batch_import_oauth(
     if not template:
         raise InvalidRequestException(f"不支持的 provider_type: {provider_type}")
 
-    # Parse import items (refresh_token + optional name)
-    import_items = _parse_standard_oauth_batch_input(payload.credentials)
-    if not import_items:
+    # 解析 Token 列表
+    tokens = _parse_tokens_input(payload.credentials)
+    if not tokens:
         raise InvalidRequestException("未找到有效的 Token 数据")
 
     api_formats = _get_provider_api_formats(provider)
@@ -1642,15 +1625,8 @@ async def batch_import_oauth(
     success_count = 0
     failed_count = 0
 
-    for idx, import_item in enumerate(import_items):
+    for idx, refresh_token in enumerate(tokens):
         try:
-            refresh_token = str(import_item.get("refresh_token") or "")
-            import_name = (
-                str(import_item.get("name")).strip()
-                if import_item.get("name") is not None
-                else ""
-            )
-
             # 验证 Token 非空
             if not refresh_token or len(refresh_token) < 10:
                 results.append(
@@ -1807,11 +1783,9 @@ async def batch_import_oauth(
                 name = existing_key.name
                 replaced = True
             else:
-                # Prefer imported account name, then fallback to email/generated name
+                # 生成名称
                 email = auth_config.get("email")
-                if import_name:
-                    name = import_name
-                elif email:
+                if email:
                     name = f"{provider_type}_{email}"
                 else:
                     name = f"{provider_type}_{int(time.time())}_{idx}"
@@ -1865,12 +1839,12 @@ async def batch_import_oauth(
         provider_id,
         provider_type,
         success_count,
-        len(import_items),
+        len(tokens),
         failed_count,
     )
 
     return BatchImportResponse(
-        total=len(import_items),
+        total=len(tokens),
         success=success_count,
         failed=failed_count,
         results=results,
