@@ -72,6 +72,28 @@ def test_patch_openai_cli_request_for_codex_adds_required_include_item() -> None
     assert "reasoning.encrypted_content" in out["include"]
 
 
+def test_patch_openai_cli_request_for_codex_normalizes_reasoning_effort_for_gpt_5_3() -> None:
+    req = {"model": "gpt-5.3", "input": [], "reasoning": {"effort": "medium", "summary": "auto"}}
+    out = patch_openai_cli_request_for_codex(req)
+
+    assert out["reasoning"]["effort"] == "high"
+    assert out["reasoning"]["summary"] == "auto"
+
+
+def test_patch_openai_cli_request_for_codex_accepts_xhigh_alias_for_gpt_5_2_codex() -> None:
+    req = {"model": "gpt-5.2-codex", "input": [], "reasoning": {"effort": "x-high"}}
+    out = patch_openai_cli_request_for_codex(req)
+
+    assert out["reasoning"]["effort"] == "xhigh"
+
+
+def test_patch_openai_cli_request_for_codex_keeps_reasoning_effort_for_other_models() -> None:
+    req = {"model": "gpt-5.4", "input": [], "reasoning": {"effort": "medium"}}
+    out = patch_openai_cli_request_for_codex(req)
+
+    assert out["reasoning"]["effort"] == "medium"
+
+
 def test_maybe_patch_request_for_codex_is_noop_for_non_codex() -> None:
     req = {"model": "gpt-test", "input": []}
     out = maybe_patch_request_for_codex(

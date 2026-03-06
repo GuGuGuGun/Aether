@@ -38,6 +38,48 @@ _REJECTED_PARAMS: frozenset[str] = frozenset(
 
 _REQUIRED_INCLUDE_ITEM = "reasoning.encrypted_content"
 
+_CODEX_HIGH_REASONING_MODELS: frozenset[str] = frozenset(
+    {
+        "gpt-5.3",
+        "gpt-5.2-codex",
+    }
+)
+
+_CODEX_REASONING_EFFORT_ALIASES: dict[str, str] = {
+    "x-high": "xhigh",
+    "x_high": "xhigh",
+    "very-high": "xhigh",
+    "very_high": "xhigh",
+    "max": "xhigh",
+}
+
+
+def _normalize_codex_reasoning_config(model: Any, reasoning: Any) -> Any:
+    if not isinstance(reasoning, dict):
+        return reasoning
+
+    effort = reasoning.get("effort")
+    if not isinstance(effort, str) or not effort.strip():
+        return reasoning
+
+    normalized_model = str(model or "").strip().lower()
+    normalized_effort = _CODEX_REASONING_EFFORT_ALIASES.get(
+        effort.strip().lower(), effort.strip().lower()
+    )
+
+    if normalized_model in _CODEX_HIGH_REASONING_MODELS and normalized_effort not in {
+        "high",
+        "xhigh",
+    }:
+        normalized_effort = "high"
+
+    if normalized_effort == effort:
+        return reasoning
+
+    patched_reasoning = dict(reasoning)
+    patched_reasoning["effort"] = normalized_effort
+    return patched_reasoning
+
 
 def patch_openai_cli_request_for_codex(request_body: dict[str, Any]) -> dict[str, Any]:
     """
@@ -58,6 +100,8 @@ def patch_openai_cli_request_for_codex(request_body: dict[str, Any]) -> dict[str
 
     # Codex expects parallel tool calls enabled.
     out["parallel_tool_calls"] = True
+
+    out["reasoning"] = _normalize_codex_reasoning_config(out.get("model"), out.get("reasoning"))
 
     # Ensure instructions exists (some gateways require it even if empty).
     instructions = out.get("instructions")
