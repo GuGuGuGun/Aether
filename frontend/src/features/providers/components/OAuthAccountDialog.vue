@@ -542,8 +542,7 @@ function getSelectedNodeLabel(): string {
 // 妯″紡
 type DialogMode = 'oauth' | 'import'
 const mode = ref<DialogMode>('oauth')
-
-// OAuth 鐘舵€?interface OAuthState {
+interface OAuthState {
   authorization_url: string
   redirect_uri: string
   instructions: string
@@ -566,9 +565,7 @@ function createInitialOAuthState(): OAuthState {
 }
 
 const oauth = ref<OAuthState>(createInitialOAuthState())
-
-// 璁惧鎺堟潈鐘舵€?type DeviceAuthType = 'builder_id' | 'identity_center'
-
+type DeviceAuthType = 'builder_id' | 'identity_center'
 interface DeviceAuthState {
   auth_type: DeviceAuthType
   start_url: string
@@ -610,8 +607,7 @@ const device = ref<DeviceAuthState>(createInitialDeviceState())
 let devicePollTimer: ReturnType<typeof setTimeout> | null = null
 const deviceCountdown = ref(0)
 let countdownTimer: ReturnType<typeof setInterval> | null = null
-
-// 瀵煎叆鐘舵€?const importText = ref('')
+const importText = ref('')
 const importFileName = ref('')
 const manualPasteText = ref('')
 const importing = ref(false)
@@ -765,7 +761,8 @@ async function handleCompleteOAuth() {
 // 妫€娴嬫槸鍚︿负鎵归噺瀵煎叆鏍煎紡
 function isBatchImport(text: string): boolean {
   const trimmed = text.trim()
-  // JSON 鏁扮粍
+
+  // JSON array input means batch import.
   if (trimmed.startsWith('[')) {
     try {
       const parsed = JSON.parse(trimmed)
@@ -774,14 +771,18 @@ function isBatchImport(text: string): boolean {
       return false
     }
   }
-  // 鍗曚釜 JSON 瀵硅薄锛堝彲鑳芥槸 pretty-printed 澶氳锛変笉绠楁壒閲忓鍏?  if (trimmed.startsWith('{')) {
+
+  // A single JSON object (possibly pretty-printed) is not batch import.
+  if (trimmed.startsWith('{')) {
     try {
       JSON.parse(trimmed)
-      return false // 鍙В鏋愮殑鍗曚釜 JSON 瀵硅薄锛岃蛋鍗曟潯瀵煎叆
+      return false
     } catch {
-      // 瑙ｆ瀽澶辫触锛氬彲鑳芥槸澶氫釜 JSON 瀵硅薄锛圝SON Lines 鏍煎紡锛夛紝缁х画妫€鏌?    }
+      // Parse failure may indicate JSON Lines; continue checks below.
+    }
   }
-  // 澶氳鏂囨湰锛堢函 Token 涓€琛屼竴涓級
+
+  // Multi-line plain text (one token per line) is treated as batch import.
   const lines = trimmed.split('\n').filter(line => line.trim() && !line.trim().startsWith('#'))
   return lines.length > 1
 }
