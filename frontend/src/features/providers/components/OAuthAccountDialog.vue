@@ -288,10 +288,10 @@
                   </div>
                   <div class="space-y-1">
                     <p class="text-sm font-medium text-destructive">
-                      {{ device.status === 'expired' ? '鎺堟潈宸茶繃鏈? : '鎺堟潈澶辫触' }}
+                      {{ device.status === 'expired' ? 'Authorization expired' : 'Authorization failed' }}
                     </p>
                     <p class="text-xs text-muted-foreground">
-                      {{ device.error || '璇烽噸璇? }}
+                      {{ device.error || 'Please retry' }}
                     </p>
                   </div>
                   <Button
@@ -448,7 +448,7 @@
             class="space-y-2"
           >
             <div class="flex items-center justify-between">
-              <span class="text-xs text-muted-foreground">{{ importFileName || '已粘贴内容' }}</span>
+              <span class="text-xs text-muted-foreground">{{ importFileName || 'Pasted content' }}</span>
               <button
                 class="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                 :disabled="importing"
