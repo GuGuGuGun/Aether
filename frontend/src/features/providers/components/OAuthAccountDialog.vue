@@ -731,8 +731,8 @@ async function initOAuth() {
     oauth.value.instructions = resp.instructions
     oauth.value.provider_type = resp.provider_type
   } catch (err: unknown) {
-    const errorMessage = parseApiError(err, '鍒濆鍖栨巿鏉冨け璐?)
-    showError(errorMessage, '閿欒')
+    const errorMessage = parseApiError(err, 'Failed to initialize authorization')
+    showError(errorMessage, 'Error')
     mode.value = 'import'
   } finally {
     oauth.value.starting = false
@@ -747,12 +747,12 @@ async function handleCompleteOAuth() {
       callback_url: oauth.value.callback_url.trim(),
       proxy_node_id: selectedProxyNodeId.value || undefined,
     })
-    success('鎺堟潈鎴愬姛锛岃处鍙峰凡娣诲姞')
+    success('Authorization successful, account added')
     emit('saved')
     handleClose()
   } catch (err: unknown) {
-    const errorMessage = parseApiError(err, '瀹屾垚鎺堟潈澶辫触')
-    showError(errorMessage, '閿欒')
+    const errorMessage = parseApiError(err, 'Failed to complete authorization')
+    showError(errorMessage, 'Error')
   } finally {
     oauth.value.completing = false
   }
@@ -873,7 +873,7 @@ async function handleImport() {
 
   const inputText = (importText.value || manualPasteText.value).trim()
   if (!inputText) {
-    showError('请输入凭据数据', '格式错误')
+    showError('Please enter credential data', 'Format error')
     return
   }
 
@@ -884,9 +884,9 @@ async function handleImport() {
       const result = await batchImportOAuth(props.providerId, inputText, proxyNodeId)
       if (result.success > 0) {
         if (result.failed > 0) {
-          success(`批量导入完成：成功 ${result.success} 个，失败 ${result.failed} 个`)
+          success(`Batch import completed: ${result.success} succeeded, ${result.failed} failed`)
         } else {
-          success(`批量导入成功：${result.success} 个账号已添加`)
+          success(`Batch import successful: ${result.success} accounts added`)
         }
         emit('saved')
         handleClose()
@@ -897,7 +897,7 @@ async function handleImport() {
     } else {
       const parsed = parseImportText(inputText)
       if (!parsed) {
-        showError('无法解析输入内容，请检查格式', '格式错误')
+        showError('Unable to parse input, please check format', 'Format error')
         return
       }
       await importProviderRefreshToken(props.providerId, {
@@ -959,8 +959,8 @@ async function startDeviceAuth() {
       totp.start(device.value.totp_secret.trim())
     }
   } catch (err: unknown) {
-    const errorMessage = parseApiError(err, '鍙戣捣璁惧鎺堟潈澶辫触')
-    showError(errorMessage, '閿欒')
+    const errorMessage = parseApiError(err, 'Failed to start device authorization')
+    showError(errorMessage, 'Error')
     device.value.status = 'error'
     device.value.error = errorMessage
   } finally {
@@ -986,7 +986,7 @@ async function pollDevice() {
         stopDevicePolling()
         totp.stop()
         device.value.status = 'authorized'
-        success(result.email ? `鎺堟潈鎴愬姛: ${result.email}` : '鎺堟潈鎴愬姛锛岃处鍙峰凡娣诲姞')
+        success(result.email ? ('Authorization successful: ' + result.email) : 'Authorization successful, account added')
         emit('saved')
         handleClose()
         return
@@ -1000,12 +1000,12 @@ async function pollDevice() {
       case 'expired':
         stopDevicePolling()
         device.value.status = 'expired'
-        device.value.error = result.error || '璁惧鐮佸凡杩囨湡'
+        device.value.error = result.error || 'Device code expired'
         return
       case 'error':
         stopDevicePolling()
         device.value.status = 'error'
-        device.value.error = result.error || '鎺堟潈澶辫触'
+        device.value.error = result.error || 'Authorization failed'
         return
     }
   } catch {
