@@ -225,7 +225,7 @@
                     <div class="flex items-center justify-between">
                       <div class="flex items-center gap-2">
                         <ShieldCheck class="w-3.5 h-3.5 text-primary" />
-                        <span class="text-[10px] text-muted-foreground">MFA 楠岃瘉鐮?/span>
+                        <span class="text-[10px] text-muted-foreground">MFA code</span>
                       </div>
                       <div class="flex items-center gap-1.5">
                         <span
@@ -233,7 +233,7 @@
                         >{{ totp.code.value }}</span>
                         <button
                           class="p-1 rounded hover:bg-muted transition-colors"
-                          title="澶嶅埗楠岃瘉鐮?
+                          title="Copy code"
                           @click="copyToClipboard(totp.code.value)"
                         >
                           <Copy class="w-3 h-3 text-muted-foreground" />
